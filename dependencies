@@ -1,0 +1,4 @@
+apt install python3
+apt install python3-pip
+/usr/bin/pip3 install pandas_datareader
+/usr/bin/pip3 install matplotlib
