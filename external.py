@@ -60,6 +60,8 @@ if __name__=="__main__":
     parser.add_argument("-e", "--end", help="End date in YYYY-MM-DD format", required=True)
     parser.add_argument("-s", "--start", help="Start date in YYYY-MM-DD format", required=True)
     parser.add_argument("-n", "--name", help="Name of .csv file to be written to. Please add the extension", required=True)
+    parser.add_argument("-m", "--manual", help="Set the stocks you want to watch manually, tickers separated by commas, no whitespace.")
+    parser.add_argument("-q", "--quick", help="Only get one datapoint instead of all of them.")
 
     args = parser.parse_args()
 
@@ -73,7 +75,7 @@ if __name__=="__main__":
     except:
         raise Exception("End date must be in YYYY-MM-DD format")
 
-    if args.dow == False and args.sp == False:
+    if not args.dow and not args.sp and args.manual == "":
         raise Exception("You need to select a market")
 
     tickers = set()
@@ -82,20 +84,53 @@ if __name__=="__main__":
         tickers = tickers.union(set(get_Dow()))
     if args.sp:
         tickers = tickers.union(set(get_SP()))
+    if args.manual != "":
+        tickers = tickers.union(set(args.manual.split(",")))
 
     data_list = list()
     for tag in tickers:
         try:
             print("Working on : {}".format(tag))
-            data = pdr.get_data_yahoo(tag, start=start, end=end)
-            data['Ticker'] = tag
-            data_list.append(data)
+            if args.quick == "":
+                data = pdr.get_data_yahoo(tag, start=start, end=end)
+                data['Ticker'] = tag
+                data_list.append(data)
+            else:
+                data = pdr.get_data_yahoo(tag, start=start, end=end)
+                data["Ticker"] = tag
+                data = data[[ args.quick, "Ticker"]]
+                data_list.append(data)
         except:
             continue
 
-    table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
-    table = table.sort_index()
-    csv = table.to_csv()
-    f = open(args.name, 'w')
-    f.write(csv)
-    f.close()
+    if args.quick == "":
+        table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
+
+        table = table.sort_index()
+        csv = table.to_csv()
+        f = open(args.name, 'w')
+        f.write(csv)
+        f.close()
+    else:
+        table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
+        table = table.sort_index()
+        dates = list(set(table.index.values))
+
+        d = dict()
+        for tag in tickers:
+            d[tag] = table[table["Ticker"].str.contains(tag)].values
+
+        for x in d:
+            l = list()
+            for y in d[x]:
+                l.append(y[0])
+            d[x] = l
+        d["Dates"] = dates
+        
+        df = pd.DataFrame(d)
+        df.set_index("Dates", inplace=True)
+
+        csv = df.to_csv()
+        f = open(args.name, 'w')
+        f.write(csv)
+        f.close()
