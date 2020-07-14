@@ -60,7 +60,6 @@ if __name__=="__main__":
     parser.add_argument("-p", "--sp", help="Select the S&P500 as your selected stocks", default=False, action="store_true")
     parser.add_argument("-e", "--end", help="End date in YYYY-MM-DD format", required=True)
     parser.add_argument("-s", "--start", help="Start date in YYYY-MM-DD format", required=True)
-    parser.add_argument("-n", "--name", help="Name of .csv file to be written to. Please add the extension", required=True)
     parser.add_argument("-m", "--manual", help="Set the stocks you want to watch manually, tickers separated by commas, no whitespace.", default="")
     parser.add_argument("-q", "--quick", help="Only get one datapoint instead of all of them.", default="")
 
@@ -181,6 +180,6 @@ if __name__=="__main__":
         df.sort_index()
 
         csv = df.to_csv()
-        f = open(args.name, 'w')
+        f = open("{}.csv".format(args.quick), 'w')
         f.write(csv)
         f.close()
