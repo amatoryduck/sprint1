@@ -3,9 +3,10 @@
 import argparse
 import datetime
 import requests
+import os
+import unicodedata
 import numpy as np
 import pandas as pd
-import unicodedata
 import pandas_datareader as pdr
 from bs4 import BeautifulSoup
 from functools import reduce
@@ -60,8 +61,8 @@ if __name__=="__main__":
     parser.add_argument("-e", "--end", help="End date in YYYY-MM-DD format", required=True)
     parser.add_argument("-s", "--start", help="Start date in YYYY-MM-DD format", required=True)
     parser.add_argument("-n", "--name", help="Name of .csv file to be written to. Please add the extension", required=True)
-    parser.add_argument("-m", "--manual", help="Set the stocks you want to watch manually, tickers separated by commas, no whitespace.")
-    parser.add_argument("-q", "--quick", help="Only get one datapoint instead of all of them.")
+    parser.add_argument("-m", "--manual", help="Set the stocks you want to watch manually, tickers separated by commas, no whitespace.", default="")
+    parser.add_argument("-q", "--quick", help="Only get one datapoint instead of all of them.", default="")
 
     args = parser.parse_args()
 
@@ -105,12 +106,59 @@ if __name__=="__main__":
 
     if args.quick == "":
         table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
-
         table = table.sort_index()
-        csv = table.to_csv()
-        f = open(args.name, 'w')
-        f.write(csv)
-        f.close()
+        dates = list(set(table.index.values))
+
+        highs = dict()
+        lows = dict()
+        opens = dict()
+        closes = dict()
+        volume = dict()
+        adj_close = dict()
+        for tag in tickers:
+            highs[tag] = table[table["Ticker"].str.contains(tag)]["High"].values
+            lows[tag] = table[table["Ticker"].str.contains(tag)]["Low"].values
+            opens[tag] = table[table["Ticker"].str.contains(tag)]["Open"].values
+            closes[tag] = table[table["Ticker"].str.contains(tag)]["Close"].values
+            adj_close[tag] = table[table["Ticker"].str.contains(tag)]["Adj Close"].values
+
+        dicts = [highs, lows, opens, closes, volume, adj_close]
+        for datapoint in dicts:
+            datapoint["Dates"] = dates
+            for tag in datapoint:
+                l = list()
+                for x in datapoint[tag]:
+                    l.append(x)
+                datapoint[tag] = l
+
+        highs_frame = pd.DataFrame(highs)
+        highs_frame.set_index("Dates", inplace=True)
+        highs_frame.sort_index()
+        lows_frame = pd.DataFrame(lows)
+        lows_frame.set_index("Dates", inplace=True)
+        lows_frame.sort_index()
+        opens_frame = pd.DataFrame(opens)
+        opens_frame.set_index("Dates", inplace=True)
+        opens_frame.sort_index()
+        closes_frame = pd.DataFrame(closes)
+        closes_frame.set_index("Dates", inplace=True)
+        closes_frame.sort_index()
+        volume_frame = pd.DataFrame(volume)
+        volume_frame.set_index("Dates", inplace=True)
+        volume_frame.sort_index()
+        adj_close_frame = pd.DataFrame(adj_close)
+        adj_close_frame.set_index("Dates", inplace=True)
+        adj_close_frame.sort_index()
+
+        frames = [highs_frame, lows_frame, opens_frame, closes_frame, volume_frame, adj_close_frame]
+        i = 0
+        for name in ["high", "low", "open", "close", "volume", "adj_close"]:
+            csv = frames[i].to_csv()
+            f = open("{}.csv".format(name), 'w')
+            f.write(csv)
+            f.close()
+            i = i + 1
+        
     else:
         table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
         table = table.sort_index()
@@ -129,6 +177,7 @@ if __name__=="__main__":
         
         df = pd.DataFrame(d)
         df.set_index("Dates", inplace=True)
+        df.sort_index()
 
         csv = df.to_csv()
         f = open(args.name, 'w')
