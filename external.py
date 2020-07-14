@@ -121,6 +121,7 @@ if __name__=="__main__":
             opens[tag] = table[table["Ticker"].str.contains(tag)]["Open"].values
             closes[tag] = table[table["Ticker"].str.contains(tag)]["Close"].values
             adj_close[tag] = table[table["Ticker"].str.contains(tag)]["Adj Close"].values
+            volume[tag] = table[table["Ticker"].str.contains(tag)]["Volume"].values
 
         dicts = [highs, lows, opens, closes, volume, adj_close]
         for datapoint in dicts:
