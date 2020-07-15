@@ -40,6 +40,7 @@ def get_SP():
     SP_Table = soup.find("table", {"id": "constituents"})
     SP_table_body = SP_Table.find('tbody')
     rows = SP_table_body.find_all('tr')
+    rows = rows[1:]
     SP_data = list()
 
     for row in rows:
@@ -54,6 +55,27 @@ def get_SP():
 
     return SP_tags
 
+def get_Currency():
+    site = requests.get("https://xe.com/symbols.php")
+    soup = BeautifulSoup(site.content, "html.parser")
+    table = soup.find("table", {"class": "currencySymblTable"})
+    rows = table.find_all("tr")
+    print(rows)
+
+    currency_data = list()
+    for row in rows:
+        cols = row.find_all('td')
+        cols = [ele.text.strip() for ele in cols]
+        currency_data.append([ele for ele in cols if ele])
+
+    currencies = list()
+    for company in currency_data:
+        if company != []:
+            if company[1] != "Currency Code":
+                currencies.append(company[1])
+
+    return currencies
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser("stocks")
     parser.add_argument("-d", "--dow", help="Select the Dow Jones as your selected stocks", default=False, action="store_true")
@@ -62,6 +84,7 @@ if __name__=="__main__":
     parser.add_argument("-s", "--start", help="Start date in YYYY-MM-DD format", required=True)
     parser.add_argument("-m", "--manual", help="Set the stocks you want to watch manually, tickers separated by commas, no whitespace.", default="")
     parser.add_argument("-q", "--quick", help="Only get one datapoint instead of all of them.", default="")
+    parser.add_argument("-c", "--currency", help="Get currency tickers", default=False, action="store_true")
 
     args = parser.parse_args()
 
@@ -75,7 +98,7 @@ if __name__=="__main__":
     except:
         raise Exception("End date must be in YYYY-MM-DD format")
 
-    if not args.dow and not args.sp and args.manual == "":
+    if not args.dow and not args.sp and args.manual == "" and not args.currency:
         raise Exception("You need to select a market")
 
     tickers = set()
@@ -84,6 +107,8 @@ if __name__=="__main__":
         tickers = tickers.union(set(get_Dow()))
     if args.sp:
         tickers = tickers.union(set(get_SP()))
+    if args.currency:
+        tickers = tickers.union(set(get_Currency()))
     if args.manual != "":
         tickers = tickers.union(set(args.manual.split(",")))
 
@@ -93,6 +118,7 @@ if __name__=="__main__":
             print("Working on : {}".format(tag))
             if args.quick == "":
                 data = pdr.get_data_yahoo(tag, start=start, end=end)
+                print(data)
                 data['Ticker'] = tag
                 data_list.append(data)
             else:
@@ -121,6 +147,8 @@ if __name__=="__main__":
             closes[tag] = table[table["Ticker"].str.contains(tag)]["Close"].values
             adj_close[tag] = table[table["Ticker"].str.contains(tag)]["Adj Close"].values
             volume[tag] = table[table["Ticker"].str.contains(tag)]["Volume"].values
+
+            print("LENS: {} {} {} {} {} {}, FOR: {}\n\n".format(len(highs[tag]), len(lows[tag]), len(opens[tag]), len(closes[tag]), len(adj_close[tag]), len(volume[tag]), tag))
 
         dicts = [highs, lows, opens, closes, volume, adj_close]
         for datapoint in dicts:
