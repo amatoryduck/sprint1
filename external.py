@@ -184,10 +184,11 @@ if __name__=="__main__":
         i = 0
         for datapoint in dicts:
             for ticker in datapoint:
-                df = pd.DataFrame(ticker)
+                df = pd.DataFrame({ticker: datapoint[ticker]})
                 df["Dates"] = dates
                 df.sort_index()
                 csv = df.to_csv()
+                os.system("mkdir {}".format(ticker))
                 f = open("{}/{}.csv".format(ticker, l[i]), 'w')
                 f.write(csv)
                 f.close()
