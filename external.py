@@ -113,9 +113,11 @@ if __name__=="__main__":
         tickers = tickers.union(set(args.manual.split(",")))
 
     data_list = list()
+    index = 0
     for tag in tickers:
+        index = index + 1
         try:
-            print("Working on : {}".format(tag))
+            print("Working on : {}, {} OUT OF {}".format(tag, index, len(tickers)))
             if args.quick == "":
                 data = pdr.get_data_yahoo(tag, start=start, end=end)
                 print(data)
