@@ -60,7 +60,6 @@ def get_Currency():
     soup = BeautifulSoup(site.content, "html.parser")
     table = soup.find("table", {"class": "currencySymblTable"})
     rows = table.find_all("tr")
-    print(rows)
 
     currency_data = list()
     for row in rows:
@@ -134,6 +133,7 @@ if __name__=="__main__":
         table = table.sort_index()
         dates = list(set(table.index.values))
 
+        mode = dict()
         highs = dict()
         lows = dict()
         opens = dict()
@@ -148,7 +148,18 @@ if __name__=="__main__":
             adj_close[tag] = table[table["Ticker"].str.contains(tag)]["Adj Close"].values
             volume[tag] = table[table["Ticker"].str.contains(tag)]["Volume"].values
 
-            print("LENS: {} {} {} {} {} {}, FOR: {}\n\n".format(len(highs[tag]), len(lows[tag]), len(opens[tag]), len(closes[tag]), len(adj_close[tag]), len(volume[tag]), tag))
+            if len(highs[tag]) in mode:
+                mode[len(highs[tag])] = mode[len(highs[tag])] + 1
+            else:
+                mode[len(highs[tag])] = 1
+            #print("LENS: {} {} {} {} {} {}, FOR: {}\n\n".format(len(highs[tag]), len(lows[tag]), len(opens[tag]), len(closes[tag]), len(adj_close[tag]), len(volume[tag]), tag))
+
+        tmp = 0
+        m = 0
+        for i in mode:
+            if mode[i] > tmp and i != 0:
+                tmp = mode[i]
+                m = i
 
         dicts = [highs, lows, opens, closes, volume, adj_close]
         for datapoint in dicts:
@@ -157,7 +168,17 @@ if __name__=="__main__":
                 l = list()
                 for x in datapoint[tag]:
                     l.append(x)
-                datapoint[tag] = l
+                if len(l) == m:
+                    datapoint[tag] = l
+
+        tmp = dicts
+        deletes = list()
+        for i in dicts:
+            for j in list(i.keys()):
+                if len(i[j]) != m:
+                    del i[j]
+
+        dicts = tmp
 
         highs_frame = pd.DataFrame(highs)
         highs_frame.set_index("Dates", inplace=True)
