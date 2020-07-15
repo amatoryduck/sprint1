@@ -107,6 +107,7 @@ if __name__=="__main__":
     parser.add_argument("-q", "--quick", help="Only get one datapoint instead of all of them.", default="")
     parser.add_argument("-c", "--currency", help="Get currency tickers", default=False, action="store_true")
     parser.add_argument("-cm", "--commodities", help="Get commodities tickers", default=False, action="store_true")
+    parser.add_argument("-v", "--verbose", help="Each stock has its own directory", default=False, action="store_true")
 
     args = parser.parse_args()
 
@@ -151,9 +152,9 @@ if __name__=="__main__":
                 data = data[[ args.quick, "Ticker"]]
                 data_list.append(data)
         except:
+            print("DATA NOT FOUND, LIKELY A WEEKEND")
             continue
-
-    if args.quick == "":
+    if args.verbose:
         table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
         table = table.sort_index()
         dates = list(set(table.index.values))
@@ -177,7 +178,6 @@ if __name__=="__main__":
                 mode[len(highs[tag])] = mode[len(highs[tag])] + 1
             else:
                 mode[len(highs[tag])] = 1
-            #print("LENS: {} {} {} {} {} {}, FOR: {}\n\n".format(len(highs[tag]), len(lows[tag]), len(opens[tag]), len(closes[tag]), len(adj_close[tag]), len(volume[tag]), tag))
 
         tmp = 0
         m = 0
@@ -203,7 +203,76 @@ if __name__=="__main__":
                 if len(i[j]) != m:
                     del i[j]
 
-        dicts = tmp
+        for i in dicts:
+            i["Dates"] = dates
+
+        l = ["high", "low", "open", "close", "volume", "adj_close"]
+        i = 0
+        for datapoint in dicts:
+            for ticker in datapoint:
+                df = pd.DataFrame({ticker: datapoint[ticker]})
+                df["Dates"] = dates
+                df.set_index("Dates", inplace=True)
+                df.sort_index()
+                csv = df.to_csv()
+                os.system("mkdir {}".format(ticker))
+                f = open("{}/{}.csv".format(ticker, l[i]), 'w')
+                f.write(csv)
+                f.close()
+            i = i + 1
+
+
+    elif args.quick == "":
+        table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
+        table = table.sort_index()
+        dates = list(set(table.index.values))
+
+        mode = dict()
+        highs = dict()
+        lows = dict()
+        opens = dict()
+        closes = dict()
+        volume = dict()
+        adj_close = dict()
+        for tag in tickers:
+            highs[tag] = table[table["Ticker"].str.contains(tag)]["High"].values
+            lows[tag] = table[table["Ticker"].str.contains(tag)]["Low"].values
+            opens[tag] = table[table["Ticker"].str.contains(tag)]["Open"].values
+            closes[tag] = table[table["Ticker"].str.contains(tag)]["Close"].values
+            adj_close[tag] = table[table["Ticker"].str.contains(tag)]["Adj Close"].values
+            volume[tag] = table[table["Ticker"].str.contains(tag)]["Volume"].values
+
+            if len(highs[tag]) in mode:
+                mode[len(highs[tag])] = mode[len(highs[tag])] + 1
+            else:
+                mode[len(highs[tag])] = 1
+
+        tmp = 0
+        m = 0
+        for i in mode:
+            if mode[i] > tmp and i != 0:
+                tmp = mode[i]
+                m = i
+
+        dicts = [highs, lows, opens, closes, volume, adj_close]
+        for datapoint in dicts:
+            datapoint["Dates"] = dates
+            for tag in datapoint:
+                l = list()
+                for x in datapoint[tag]:
+                    l.append(x)
+                if len(l) == m:
+                    datapoint[tag] = l
+
+        tmp = dicts
+        deletes = list()
+        for i in dicts:
+            for j in list(i.keys()):
+                if len(i[j]) != m:
+                    del i[j]
+
+        for i in dicts:
+            i["Dates"] = dates
 
         highs_frame = pd.DataFrame(highs)
         highs_frame.set_index("Dates", inplace=True)
