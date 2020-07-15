@@ -186,6 +186,7 @@ if __name__=="__main__":
             for ticker in datapoint:
                 df = pd.DataFrame({ticker: datapoint[ticker]})
                 df["Dates"] = dates
+                df.set_index("Dates", inplace=True)
                 df.sort_index()
                 csv = df.to_csv()
                 os.system("mkdir {}".format(ticker))
