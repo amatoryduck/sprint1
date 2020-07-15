@@ -127,6 +127,7 @@ if __name__=="__main__":
                 data = data[[ args.quick, "Ticker"]]
                 data_list.append(data)
         except:
+            print("DATA NOT FOUND, LIKELY A WEEKEND")
             continue
     if args.verbose:
         table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
