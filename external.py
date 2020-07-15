@@ -131,7 +131,7 @@ if __name__=="__main__":
     if args.sp:
         tickers = tickers.union(set(get_SP()))
     if args.currency:
-        tickers = tickers.union(set(get_Currency()))
+        tickers = tickers.union(set(get_currency()))
     if args.commodities:
         tickers = tickers.union(set(get_commodities()))
     if args.manual != "":
