@@ -55,7 +55,29 @@ def get_SP():
 
     return SP_tags
 
-def get_Currency():
+def get_commodities():
+    comm_website = requests.get("https://finance.yahoo.com/commodities")
+    soup = BeautifulSoup(comm_website.content, "html.parser")
+    commodities = soup.findAll("a", {"class":"Fw(b)", "data-symbol":True})
+
+    titles = {}
+    tickers = []
+    print("Commodities list")
+    for commodity in commodities:
+        ticker = commodity.get("data-symbol")
+        tickers.append(ticker)
+        print(ticker)
+        # Ticker - Title dictionary can be useful later
+        titles[ticker] = commodity.get("title")
+
+    # Hard coded commodities list backup
+        # Gold, Silver, Crude
+    commodities = ["GC=F", "SI=F", "CL=F"]
+    if len(tickers) > 0:
+        return commodities
+    return tickers
+
+def get_currency():
     site = requests.get("https://xe.com/symbols.php")
     soup = BeautifulSoup(site.content, "html.parser")
     table = soup.find("table", {"class": "currencySymblTable"})
@@ -84,6 +106,7 @@ if __name__=="__main__":
     parser.add_argument("-m", "--manual", help="Set the stocks you want to watch manually, tickers separated by commas, no whitespace.", default="")
     parser.add_argument("-q", "--quick", help="Only get one datapoint instead of all of them.", default="")
     parser.add_argument("-c", "--currency", help="Get currency tickers", default=False, action="store_true")
+    parser.add_argument("-cm", "--commodities", help="Get commodities tickers", default=False, action="store_true")
 
     args = parser.parse_args()
 
@@ -97,7 +120,7 @@ if __name__=="__main__":
     except:
         raise Exception("End date must be in YYYY-MM-DD format")
 
-    if not args.dow and not args.sp and args.manual == "" and not args.currency:
+    if not args.dow and not args.sp and args.manual and args.commodities == "" and not args.currency:
         raise Exception("You need to select a market")
 
     tickers = set()
@@ -108,6 +131,8 @@ if __name__=="__main__":
         tickers = tickers.union(set(get_SP()))
     if args.currency:
         tickers = tickers.union(set(get_Currency()))
+    if args.commodities:
+        tickers = tickers.union(set(get_commodities()))
     if args.manual != "":
         tickers = tickers.union(set(args.manual.split(",")))
 
