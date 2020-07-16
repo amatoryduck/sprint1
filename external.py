@@ -8,6 +8,7 @@ import unicodedata
 import numpy as np
 import pandas as pd
 import pandas_datareader as pdr
+import statsmodels.formula.api as sm
 from bs4 import BeautifulSoup
 from functools import reduce
 
@@ -317,6 +318,14 @@ if __name__=="__main__":
                 f = open("{}_pct_change.csv".format(names[i]), 'w')
                 f.write(csv)
                 f.close()
+
+                line = " + ".join(frame.columns[1:])
+                model = sm.ols("{} ~ {}".format(frame.columns[0], line), data=frame)
+                model = returns.to_csv()
+                f = open("{}_sm.csv".format(names[i]), 'w')
+                f.write(csv)
+                f.close()
+
                 i = i + 1
         
     else:
