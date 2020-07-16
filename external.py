@@ -72,11 +72,13 @@ def get_commodities():
         titles[ticker] = commodity.get("title")
 
     # Hard coded commodities list backup
-        # Gold, Silver, Crude
-    commodities = ["GC=F", "SI=F", "CL=F"]
+        # Gold, Corn, Crude
+    commodities = ["GC=F", "C=F", "CL=F"]
     """if len(tickers) > 0:
         return commodities"""
-    return tickers
+   	# use following code if you want all tickers
+    # return tickers 
+    return commodities
 
 def get_currency():
     site = requests.get("https://xe.com/symbols.php")
