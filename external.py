@@ -73,8 +73,8 @@ def get_commodities():
     # Hard coded commodities list backup
         # Gold, Silver, Crude
     commodities = ["GC=F", "SI=F", "CL=F"]
-    if len(tickers) > 0:
-        return commodities
+    """if len(tickers) > 0:
+        return commodities"""
     return tickers
 
 def get_currency():
@@ -106,8 +106,9 @@ if __name__=="__main__":
     parser.add_argument("-m", "--manual", help="Set the stocks you want to watch manually, tickers separated by commas, no whitespace.", default="")
     parser.add_argument("-q", "--quick", help="Only get one datapoint instead of all of them.", default="")
     parser.add_argument("-c", "--currency", help="Get currency tickers", default=False, action="store_true")
-    parser.add_argument("-cm", "--commodities", help="Get commodities tickers", default=False, action="store_true")
+    parser.add_argument("-o", "--commodities", help="Get commodities tickers", default=False, action="store_true")
     parser.add_argument("-v", "--verbose", help="Each stock has its own directory", default=False, action="store_true")
+    parser.add_argument("-r", "--regress", help="Return regression csv", default=False, action="store_true")
 
     args = parser.parse_args()
 
@@ -212,15 +213,18 @@ if __name__=="__main__":
         i = 0
         for datapoint in dicts:
             for ticker in datapoint:
-                df = pd.DataFrame({ticker: datapoint[ticker]})
-                df["Dates"] = dates
-                df.set_index("Dates", inplace=True)
-                df.sort_index()
-                csv = df.to_csv()
-                os.system("mkdir {}".format(ticker))
-                f = open("{}/{}.csv".format(ticker, l[i]), 'w')
-                f.write(csv)
-                f.close()
+                try:
+                    df = pd.DataFrame({ticker: datapoint[ticker]})
+                    df["Dates"] = dates
+                    df.set_index("Dates", inplace=True)
+                    df.sort_index()
+                    csv = df.to_csv()
+                    os.system("mkdir {}".format(ticker))
+                    f = open("{}/{}.csv".format(ticker, l[i]), 'w')
+                    f.write(csv)
+                    f.close()
+                except:
+                    continue
             i = i + 1
 
 
@@ -303,6 +307,17 @@ if __name__=="__main__":
             f.write(csv)
             f.close()
             i = i + 1
+
+        i = 0
+        names = ["high", "low", "open", "close", "volume", "adj_close"]
+        if args.regress:
+            for frame in frames:
+                returns = frame.pct_change()
+                csv = returns.to_csv()
+                f = open("{}_pct_change.csv".format(names[i]), 'w')
+                f.write(csv)
+                f.close()
+                i = i + 1
         
     else:
         table = reduce(lambda x, acc: pd.concat([x, acc]), data_list, pd.DataFrame())
